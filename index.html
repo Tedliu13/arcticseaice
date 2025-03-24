@@ -14,12 +14,12 @@
 <body>
 <div id="map"></div>
 <script type="module">
-    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.module.js';
-    import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.150.1/examples/jsm/controls/OrbitControls.js';
+    import * as THREE from 'https://unpkg.com/three@0.150.1/build/three.module.js';
+    import { OrbitControls } from 'https://unpkg.com/three@0.150.1/examples/jsm/controls/OrbitControls.js';
 
     console.log("✅ Three.js 和 OrbitControls 成功從 CDN 載入！");
 
-    // === Mapbox 初始設定 ===
+    // === Mapbox 設定 ===
     mapboxgl.accessToken = 'pk.eyJ1IjoidGVkbGl1IiwiYSI6ImNtMHAxMjdveDAwZWUya29sanY1c3Btc2EifQ.dGpYV4RZ4-OcpITjSKfcfg';  // 請更換為你的 Mapbox Access Token
 
     const map = new mapboxgl.Map({
@@ -31,10 +31,7 @@
         antialias: true
     });
 
-    const renderer = new THREE.WebGLRenderer({ 
-        antialias: true, 
-        alpha: true 
-    });
+    const renderer = new THREE.WebGLRenderer({ alpha: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
     document.body.appendChild(renderer.domElement);
 
@@ -46,19 +43,19 @@
     controls.enableZoom = true;
     controls.enablePan = false;
 
-    // === 建立地球球體 (海冰動畫會貼在這上面) ===
+    // === 建立地球球體 ===
     const sphereGeometry = new THREE.SphereGeometry(1, 64, 64);
     const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
     const globe = new THREE.Mesh(sphereGeometry, sphereMaterial);
     scene.add(globe);
 
-    // === 儲存圖片檔名 (符合 sea_ice_${year} 的格式) ===
+    // === 載入圖片 (檔名格式 sea_ice_${year}.png) ===
     const seaIceImages = [];
     for (let year = 1985; year <= 2024; year++) {
         seaIceImages.push(`./sea_ice_frames/sea_ice_${year}.png`);
     }
 
-    // === 貼圖用的 TextureLoader ===
+    // === 貼圖載入器 ===
     const loader = new THREE.TextureLoader();
     let currentFrame = 0;
 
@@ -68,12 +65,14 @@
             globe.material.transparent = true;
             globe.material.needsUpdate = true;
             console.log(`成功載入影像：${seaIceImages[currentFrame]}`);
+        }, undefined, function (err) {
+            console.error(`載入影像失敗：${seaIceImages[currentFrame]}`, err);
         });
 
         currentFrame = (currentFrame + 1) % seaIceImages.length;
     }
 
-    // 每 0.5 秒自動更新影像 (動畫效果)
+    // 每 0.5 秒更新影像
     setInterval(updateTexture, 500);
 
     // === 動畫函式 ===

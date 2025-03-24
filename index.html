@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Arctic Sea Ice Animation with Mapbox</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        #map { position: absolute; top: 0; bottom: 0; width: 100%; }
+    </style>
+    <!-- 引入 Mapbox GL JS -->
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.10.0/mapbox-gl.js"></script>
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.10.0/mapbox-gl.css" rel="stylesheet"/>
+</head>
+<body>
+<div id="map"></div>
+<script type="module">
+    import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.150.1/build/three.module.js';
+    import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.150.1/examples/jsm/controls/OrbitControls.js';
+
+    console.log("✅ Three.js 和 OrbitControls 成功從 CDN 載入！");
+
+    // === Mapbox 初始設定 ===
+    mapboxgl.accessToken = 'pk.eyJ1IjoidGVkbGl1IiwiYSI6ImNtMHAxMjdveDAwZWUya29sanY1c3Btc2EifQ.dGpYV4RZ4-OcpITjSKfcfg';  // 請更換為你的 Mapbox Access Token
+
+    const map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/light-v10',
+        center: [0, 0],
+        zoom: 1.5,
+        pitch: 45,
+        antialias: true
+    });
+
+    const renderer = new THREE.WebGLRenderer({ 
+        antialias: true, 
+        alpha: true 
+    });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.body.appendChild(renderer.domElement);
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+    camera.position.set(0, 0, 2);
+
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableZoom = true;
+    controls.enablePan = false;
+
+    // === 建立地球球體 (海冰動畫會貼在這上面) ===
+    const sphereGeometry = new THREE.SphereGeometry(1, 64, 64);
+    const sphereMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
+    const globe = new THREE.Mesh(sphereGeometry, sphereMaterial);
+    scene.add(globe);
+
+    // === 儲存圖片檔名 (符合 sea_ice_${year} 的格式) ===
+    const seaIceImages = [];
+    for (let year = 1985; year <= 2024; year++) {
+        seaIceImages.push(`./sea_ice_frames/sea_ice_${year}.png`);
+    }
+
+    // === 貼圖用的 TextureLoader ===
+    const loader = new THREE.TextureLoader();
+    let currentFrame = 0;
+
+    function updateTexture() {
+        loader.load(seaIceImages[currentFrame], function (texture) {
+            globe.material.map = texture;
+            globe.material.transparent = true;
+            globe.material.needsUpdate = true;
+            console.log(`成功載入影像：${seaIceImages[currentFrame]}`);
+        });
+
+        currentFrame = (currentFrame + 1) % seaIceImages.length;
+    }
+
+    // 每 0.5 秒自動更新影像 (動畫效果)
+    setInterval(updateTexture, 500);
+
+    // === 動畫函式 ===
+    function animate() {
+        controls.update();
+        renderer.render(scene, camera);
+        requestAnimationFrame(animate);
+    }
+
+    animate();
+</script>
+</body>
+</html>
